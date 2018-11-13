@@ -1,0 +1,7 @@
+[package]
+name = "advgame"
+version = "0.1.0"
+authors = ["Jacek Olczyk <jacek.olczyk98@gmail.com>"]
+
+[dependencies]
+ncurses = "5.97.0"

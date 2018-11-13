@@ -1,0 +1,25 @@
+Test game
+STATS[[
+    STAT[Test stat: 1]
+]];
+STAGES[[
+    STAGE[
+        BEGIN 1. Stage 1: This is a generic Stage 1 text.
+        It was in multiple lines inside the file.$
+            2 - This option
+            is supposed to move you to the other stage.$
+            1 - This option moves you back to the same stage.$
+            3 - This option ends the game immediately.$
+            1 - This is another option that loops back to here.$
+    ],
+    STAGE[
+        2. Stage 2 - the continuation:
+            On the previous line there was no extra text.$
+            3 - This option ends the demo.$
+            1 - This option goes back to the first stage.$
+    ],
+    STAGE[
+        END 3. The End: This is the absolute end of the demo.
+        Thank you for playing!$
+    ],
+]]
