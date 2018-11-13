@@ -82,15 +82,14 @@ fn parse_stage_text(line: &str, game: &mut GameState, nr: usize) -> Result<Parsi
 
 fn parse_nei_text(line: &str, game: &mut GameState, nr: usize, nei_nr: usize) -> Result<ParsingState, &'static str> {
     let nei_name = &mut game.stages[nr].neighbors[nei_nr].1;
+    *nei_name += " ";
     if line.is_empty() {
         Ok(ParsingState::NeighbourTextParsing(nr, nei_nr))
     } else if line.ends_with("$") {
-        nei_name += " ";
-        nei_name += &line[..line.len() - 1];
+        *nei_name += &line[..line.len() - 1];
         Ok(ParsingState::NeighboursParsing(nr))
     } else {
-        nei_name += " ";
-        nei_name += line;
+        *nei_name += line;
         Ok(ParsingState::NeighbourTextParsing(nr, nei_nr))
     }
 }
@@ -153,7 +152,7 @@ fn parse_line(line: &str, state: ParsingState, game: &mut GameState) -> Result<P
                 println!("{}", line);
             }
             if line.starts_with(END_STAGE_MARKER) {
-                if game.exit_stage.is_some() {
+                if game.exit_stage.is_some() { // TODO: Add support for multiple END stages.
                     return Err("Found at least two stages marked with 'END'");
                 }
                 change_end = true;
@@ -177,9 +176,16 @@ fn parse_line(line: &str, state: ParsingState, game: &mut GameState) -> Result<P
             if game.stages.len() <= nr {
                 game.stages.resize(nr + 1, Stage::new());
             }
-            let stage = &mut game.stages[nr];
-            stage.content.clear();
-            stage.name = name.to_string();
+
+            {// new scope to end mutable borrow before parse_stage_text call
+                let stage = &mut game.stages[nr];
+                if !stage.is_empty() {
+                    return Err("Found duplicate stage number.");
+                }
+                stage.content.clear();
+                stage.name = name.to_string();
+            }
+
             if change_begin {
                 game.current_stage = Some(nr);
             }
@@ -217,11 +223,17 @@ fn parse_line(line: &str, state: ParsingState, game: &mut GameState) -> Result<P
     }
 }
 
-fn verify_state(state: GameState) -> Result<GameState, &'static str> {
+fn verify_state(parsing_state: ParsingState, state: GameState) -> Result<GameState, &'static str> {
     if state.exit_stage.is_none() {
         Err("Missing exit stage. Maybe you didn't add 'END' to the beginning of a stage?")
     } else if state.current_stage.is_none() {
         Err("Missing starting stage. Maybe you didn't add 'BEGIN' to the beginning of a stage?")
+    } else if match parsing_state { ParsingState::End => false, _ => true} {
+        Err("Parsing ended unexpectedly.")
+    } else if state.stages.iter().enumerate().find(|(i, stage)| {
+        !stage.is_empty() && stage.neighbors.len() == 0 && state.exit_stage.unwrap() != *i
+    }).is_some() {
+        Err("Found a dead end stage not marked with END.")
     } else {
         Ok(state)
     }
@@ -245,7 +257,7 @@ fn get_state<T>(reader: T) -> GameState where T: IntoIterator<Item=(usize, Strin
             }
         }
     }
-    match verify_state(game_state) {
+    match verify_state(state, game_state) {
         Ok(state) => state,
         Err(err) => {
             eprintln!("Game parsed successfully, but the following integrity check failed: {}", err);

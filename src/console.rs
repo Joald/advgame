@@ -1,6 +1,5 @@
 use ncurses::*;
 use game_state::Stage;
-use game_state::GameState;
 
 pub struct Console {
     row_count: i32,

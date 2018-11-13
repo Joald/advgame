@@ -1,6 +1,5 @@
 use game_state::GameState;
 use console::*;
-use game_state::Stage;
 
 pub fn main_loop(cls: &Console, state: &mut GameState) {
     let mut action = Action::Unimplemented;
@@ -25,15 +24,16 @@ pub fn main_loop(cls: &Console, state: &mut GameState) {
                 }
             }
             Action::Confirm => {
-                stage.current_option = 1;
+
                 state.current_stage = Some(stage.neighbors[stage.current_option - 1].0);
+                stage.current_option = 1;
             }
             Action::Number(num) =>
                 if !stage.neighbors.is_empty() && 0 < num && num <= stage.neighbors.len() {
-                    stage.current_option = 1;
                     state.current_stage = Some(stage.neighbors[num - 1].0);
+                    stage.current_option = 1;
                 }
-            _ => {}//shut
+            _ => {} //shut
         }
     }
     cls.clear();
