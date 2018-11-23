@@ -1,12 +1,24 @@
+#[macro_use]
+extern crate lazy_static;
 extern crate ncurses;
+extern crate serde;
+extern crate serde_json;
+#[macro_use]
+extern crate serde_derive;
+
+
+#[macro_use]
+mod debug;
+mod misc;
 mod playback;
 mod game_state;
 mod parsing;
 mod console;
+
 use parsing::parse_game;
 use playback::play_game;
 
-use parsing::GRAMMAR;
+use parsing::FORMAT;
 
 
 
@@ -29,12 +41,17 @@ fn main() {
     }
 
     if args[1] == "--format" {
-        println!("{}", GRAMMAR);
+        println!("{}", FORMAT);
         std::process::exit(0);
     }
 
-    let mut init_state = parse_game(&args[1][..]);
+    let init_state = match parse_game(&args[1][..]) {
+        Ok(st) => st,
+        Err(err) => {
+            println!("Error parsing game: {}", err);
+            return;
+        }
+    };
 
-    init_state.print();
-    play_game(&mut init_state);
+    play_game(init_state);
 }

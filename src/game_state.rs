@@ -1,77 +1,209 @@
 use std::collections::HashMap;
+use console::Action;
+use std::cell::UnsafeCell;
+use std::fmt;
 
-pub struct Stage {
+
+#[derive(Serialize, Deserialize)]
+pub struct Statistic {
     pub name: String,
-    pub neighbors: Vec<(usize, String)>,
-    pub content: String,
-    pub starting: bool,
-    pub current_option: usize
+    pub default_value: i32,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct StageOption {
+    pub target_stage: usize,
+    pub text: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Stage {
+    pub index: usize,
+    pub name: String,
+    pub text: Vec<String>,
+    pub options: Vec<StageOption>,
+    #[serde(skip)]
+    pub current_option: usize,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct GameState {
+    name: String,
+    stats: Vec<Statistic>,
+    stages: Vec<Stage>,
+    #[serde(rename = "entry_stage")]
+    current_stage: usize,
+    exit_stage: usize,
+    #[serde(skip)]
+    finished: bool,
+}
+
+impl fmt::Display for GameState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Name: \"{}\"\nTODO rest", self.name)
+    }
+}
+
+impl GameState {
+    pub fn get_name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn post_process(mut self) -> Result<GameState, String> {
+        // Check if all stages except the last one have at least one option.
+        {
+            let it =
+                self.stages.iter().filter(|stage| { stage.options.len() == 0 });
+            let mut found_last = false;
+            for stage in it {
+                if stage.index != self.exit_stage {
+                    return Err(format!("Stage nr. {} has no options and isn't the final stage!", stage.index));
+                }
+                found_last = true;
+            }
+            if !found_last {
+                return Err("Exit stage can't contain options!".to_string());
+            }
+        }
+
+        // Map all stage numbers to array indices.
+        let mut mapper = HashMap::new();
+        for (i, stage) in self.stages.iter().enumerate() {
+            mapper.insert(stage.index, i);
+        }
+        for stage in self.stages.iter_mut() {
+            for option in stage.options.iter_mut() {
+                if option.text.is_empty() {
+                    return Err(format!("No text provided for option in stage {}", stage.index));
+                }
+                option.target_stage = match mapper.get(&option.target_stage) {
+                    Some(&ind) => ind,
+                    None => return Err(format!(
+                        "Option \"{}\" in stage {}, \"{}\" points to an inexistent stage {}.",
+                        option.text[0], stage.index, stage.text[0], option.target_stage
+                    ))
+                }
+            }
+            stage.index = *mapper.get(&stage.index).expect(
+                "Post processing of data failed. It's a bug on our side. Sorry!"
+            ); // panic because this should never happen regardless of input data
+        }
+        self.current_stage = *match mapper.get(&self.current_stage) {
+            Some(st) => st,
+            None => return Err("Entry stage is invalid!".to_string())
+        };
+        self.exit_stage = *match mapper.get(&self.exit_stage) {
+            Some(st) => st,
+            None => return Err("Exit stage is invalid!".to_string())
+        };
+
+        // Make sure we start in the correct stage
+        self.stages[self.current_stage].enter();
+        Ok(self)
+    }
+
+    pub unsafe fn change_to_stage_index(state: &UnsafeCell<GameState>, stage: usize) {
+        let from = &mut (*state.get()).current_stage;
+        dprintln!("Changing from {} to {}", *from, stage);
+        if *from != stage {
+            GameState::get_current_stage_mut(state).leave();
+            *from = stage;
+            GameState::get_current_stage_mut(state).enter();
+        }
+    }
+
+    pub unsafe fn get_current_stage_mut(state: &UnsafeCell<GameState>) -> &mut Stage {
+        &mut (*state.get()).stages[(*state.get()).current_stage]
+    }
+
+    pub fn get_current_stage(&self) -> &Stage {
+        &self.stages[self.current_stage]
+    }
+
+    pub unsafe fn handle_action(self, action: &Action) -> GameState {
+        let state = UnsafeCell::new(self);
+
+        { // new scope so state borrows end before end of fn
+            let stage = GameState::get_current_stage_mut(&state);
+            match action {
+                Action::Up => stage.change_option(Direction::Up),
+                Action::Down => stage.change_option(Direction::Down),
+                Action::Confirm => {
+                    if stage.options.len() == 0 {}
+                    let index = stage.get_current_option_target();
+                    if index.is_none() {
+                        dprintln!("Invalid option selection. Check changes of current option.");
+                        (*state.get()).finished = true
+                    } else {
+                        GameState::change_to_stage_index(&state, index.unwrap());
+                    }
+                }
+                Action::Number(num) =>
+                    if stage.has_option(num.to_owned()) {
+                        GameState::change_to_stage_index(&state, num.to_owned());
+                    }
+                _ => {} //yes rust, these are all the options I want
+            }
+        };
+        state.into_inner()
+    }
+
+    pub fn is_finished(&self) -> bool {
+        self.finished
+    }
+}
+
+pub enum Direction {
+    Up,
+    Down,
 }
 
 impl Stage {
-    pub fn new() -> Stage {
-        Stage {
-            name: String::new(),
-            neighbors: Vec::new(),
-            content: String::new(),
-            starting: false,
-            current_option: 1
+    pub fn change_option(&mut self, dir: Direction) {
+        let old = self.current_option;
+        match dir {
+            Direction::Up => {
+                self.current_option -= 1;
+                if self.current_option == 0 {
+                    self.current_option = self.options.len();
+                }
+            }
+            Direction::Down => {
+                self.current_option += 1;
+                if self.current_option == self.options.len() + 1 {
+                    self.current_option = 1;
+                }
+            }
         }
-    }
-    pub fn print(&self) {
-        println!("Stage \"{}\"{}:\n{}", self.name, if self.starting { " INIT" } else { "" }, self.content);
-        for neighbor in &self.neighbors {
-            println!("    {}. {}", neighbor.0, neighbor.1)
-        }
-        println!()
+        dprintln!("Moving arrow from {} to {}", old, self.current_option);
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.name.is_empty() && self.content.is_empty() && self.neighbors.is_empty()
+    pub fn has_option(&self, option_nr: usize) -> bool {
+        !self.options.is_empty() && 0 < option_nr && option_nr <= self.options.len()
     }
-}
 
-impl Clone for Stage {
-    fn clone(&self) -> Self {
-        if self.is_empty() {
-            Stage::new()
+    pub fn get_option_target(&self, option_nr: usize) -> Option<usize> {
+        if self.has_option(option_nr) {
+            Some(self.options[option_nr - 1].target_stage)
         } else {
-            panic!("Attempting to clone an existing stage!")
+            None
         }
     }
-}
 
-pub struct GameState {
-    pub name: String,
-    pub stats: HashMap<String, usize>,
-    pub stages: Vec<Stage>,
-    pub current_stage: Option<usize>,
-    pub exit_stage: Option<usize>
-}
-
-// invariant: stage graph and content are always the same size
-impl GameState {
-    pub fn new() -> GameState {
-        GameState {
-            name: "".to_string(),
-            stats: HashMap::new(),
-            stages: Vec::new(),
-            current_stage: None,
-            exit_stage: None
+    pub fn get_current_option_target(&self) -> Option<usize> {
+        if self.options.is_empty() {
+            None
+        } else {
+            self.get_option_target(self.current_option)
         }
     }
-    pub fn print(&self) {
-        print_game_state(self)
-    }
-}
 
-pub fn print_game_state(state: &GameState) {
-    println!("Here's what we got so far:\nName: {}\nStats:", state.name);
-    for (name, val) in &state.stats {
-        println!("{}: {}", name, val);
+    pub fn enter(&mut self) {
+        self.current_option = 1;
     }
-    println!("Stages:");
-    for stage in &state.stages {
-        if !stage.is_empty() {stage.print();}
+
+    #[allow(unused)]
+    pub fn leave(&mut self) {
+        // left for future
     }
 }

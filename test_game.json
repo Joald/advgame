@@ -1,0 +1,80 @@
+{
+  "name": "Test game",
+  "stats": [
+    {
+      "name": "Test stat",
+      "default_value": 1
+    }
+  ],
+  "stages": [
+    {
+      "index": 1,
+      "name": "Stage 1",
+      "text": [
+        "This is a generic Stage 1 text.",
+        "This the second line of the generic Stage 1 text."
+      ],
+      "options": [
+        {
+          "target_stage": 2,
+          "text": [
+            "This option is supposed to move you to the other stage.",
+            "Also this option will have multiple lines of text."
+          ]
+        },
+        {
+          "target_stage": 1,
+          "text": [
+            "This option moves you back to the same stage.",
+            "This option will also have multiple lines!"
+          ]
+        },
+        {
+          "target_stage": 3,
+          "text": [
+            "This option ends the game immediately."
+          ]
+        },
+        {
+          "target_stage": 1,
+          "text": [
+            "This is another option that loops back to here."
+          ]
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "name": "Stage 2 - the continuation",
+      "text": [
+        "This is a generic Stage 2 text.",
+        "The purpose of Stage 2 is to test going back and forth between stages."
+      ],
+      "options": [
+        {
+          "target_stage": 3,
+          "text": [
+            "This option ends the demo."
+          ]
+        },
+        {
+          "target_stage": 1,
+          "text": [
+            "This option goes back to the first stage."
+          ]
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "name": "Stage 3",
+      "text": [
+        "This the exit stage of the demo.",
+        "Thank you for testing!"
+      ],
+      "options": []
+    }
+  ],
+  "entry_stage": 1,
+  "exit_stage": 3
+}

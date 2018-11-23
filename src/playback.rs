@@ -1,39 +1,15 @@
 use game_state::GameState;
 use console::*;
 
-pub fn main_loop(cls: &Console, state: &mut GameState) {
+pub fn main_loop(cls: &Console, mut state: GameState) {
     let mut action = Action::Unimplemented;
     while match action { Action::Quit => false, _ => true } {
         cls.clear();
-        let nr = state.current_stage.unwrap();
-        let stage = &mut state.stages[nr];
-
-        cls.print_stage(stage);
+        cls.print_stage(state.get_current_stage());
         action = cls.get_action();
-        match action { // TODO refactor changing into methods.
-            Action::Up => {
-                stage.current_option -= 1;
-                if stage.current_option == 0 {
-                    stage.current_option = stage.neighbors.len();
-                }
-            }
-            Action::Down => {
-                stage.current_option += 1;
-                if stage.current_option == stage.neighbors.len() + 1 {
-                    stage.current_option = 1;
-                }
-            }
-            Action::Confirm => {
-
-                state.current_stage = Some(stage.neighbors[stage.current_option - 1].0);
-                stage.current_option = 1;
-            }
-            Action::Number(num) =>
-                if !stage.neighbors.is_empty() && 0 < num && num <= stage.neighbors.len() {
-                    state.current_stage = Some(stage.neighbors[num - 1].0);
-                    stage.current_option = 1;
-                }
-            _ => {} //shut
+        state = unsafe { state.handle_action(&action) };
+        if state.is_finished() {
+            break;
         }
     }
     cls.clear();
@@ -42,10 +18,10 @@ pub fn main_loop(cls: &Console, state: &mut GameState) {
     cls.get_ch();
 }
 
-pub fn play_game(state: &mut GameState) {
+pub fn play_game(state: GameState) {
     let cls = Console::new();
-
-    cls.print_center(&format!("You have successfully parsed {}!", state.name));
+    dprintln!("Welcome to the advgame debug mode!");
+    cls.print_center(&format!("You have successfully loaded \"{}\"!", state.get_name()));
     cls.print_center_offset("Play now? [y]/n", 1);
 
     let mut response_guard: Option<bool> = None;
