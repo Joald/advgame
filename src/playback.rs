@@ -2,12 +2,13 @@ use game_state::GameState;
 use console::*;
 
 pub fn main_loop(cls: &Console, mut state: GameState) {
+    dprintln!("Starting main loop!");
     let mut action = Action::Unimplemented;
     while match action { Action::Quit => false, _ => true } {
         cls.clear();
-        cls.print_stage(state.get_current_stage());
+        cls.print_stage(&state.get_current_stage().borrow(), &state);
         action = cls.get_action();
-        state = unsafe { state.handle_action(&action) };
+        state = state.handle_action(&action);
         if state.is_finished() {
             break;
         }

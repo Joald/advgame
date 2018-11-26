@@ -9,6 +9,8 @@ pub struct Console {
 }
 use std::sync::Mutex;
 use misc;
+use game_state::GameState;
+
 lazy_static! {
     pub static ref DEBUG_LOG: Mutex<String> = Mutex::new(String::new());
 }
@@ -49,7 +51,7 @@ impl Console {
         (self.col_count - width) / 2
     }
 
-    pub fn print_stage(&self, stage: &Stage) {//}, game: &GameState) {
+    pub fn print_stage(&self, stage: &Stage, game: &GameState) {
         // Stage name is in bold.
         attr_on(A_BOLD());
         self.print_top_offset(&stage.name, 1);
@@ -63,6 +65,7 @@ impl Console {
         }
         current_line_nr += 2;
 
+
         // To print options evenly, we need the maximum line width.
         // As we can have lots of options, we need to figure out how many digits
         // the option number will have. Then, to center the text we pad the max line width
@@ -70,21 +73,27 @@ impl Console {
         // after the number and four for the selection arrow.
         const ARROW_LEN: usize = 4;
         const DOT_AND_SPACE: usize = 2;
-        let max_number_width = stage.options.len().to_string().len();
+        let max_number_width = game.visible_options(stage).count().to_string().len();
         let cont_offset = max_number_width + DOT_AND_SPACE + ARROW_LEN;
-        let max_width = stage.options.iter()
+        let max_width = game.visible_options(stage)
             .map(|option| { misc::max_str_len(&option.text) })
             .max()
             .unwrap_or(0)
             + 2 * cont_offset;
 
-        for (i, option) in stage.options.iter().enumerate() {
-            let arrow = if i + 1 == stage.current_option {
-                "--> ".to_string()
-            } else {
-                " ".repeat(ARROW_LEN)
-            };
-            let row = format!("{}{}. {}", arrow, i + 1, option.text[0]);
+        let mut display_index = 0;
+        for (internal_index, option) in stage.options.iter().enumerate() {
+            if !game.is_filled(option) {
+                continue;
+            }
+            display_index += 1;
+            let arrow =
+                if internal_index == stage.current_option - 1 {
+                    "--> ".to_string()
+                } else {
+                    " ".repeat(ARROW_LEN)
+                };
+            let row = format!("{}{}. {}", arrow, display_index, option.text[0]);
             mvprintw(current_line_nr, self.left_align(max_width as i32), &row);
             for line in option.text[1..].iter() {
                 let line = " ".repeat(cont_offset) + line;
@@ -94,25 +103,27 @@ impl Console {
             current_line_nr += 2;
         }
     }
+
     pub fn get_ch(&self) -> Option<i32> {
         Some(getch())
         // maybe some stuff needs to be handled in the future?
     }
 
-    fn interpret_ch(&self, ret: i32) -> Action {
-        if 0 <= ret && ret < 256 {
-            let ret = std::char::from_u32(ret as u32).expect("Apparently [0;256) is not the correct range for chars.");
-            match ret {
+    fn interpret_ch(&self, ch: i32) -> Action {
+        if 0 <= ch && ch < 256 {
+            let ch = std::char::from_u32(ch as u32).expect("Apparently [0;256) is not the correct range for chars.");
+            dprintln!("Detected character '{}' pressed!", ch);
+            match ch {
                 'q' | 'Q' => Action::Quit,
                 '\n' | 'y' | 'Y' => Action::Confirm,
-                '0'...'9' => Action::Number(((ret as u8) - ('0' as u8)) as usize),
+                '0'...'9' => Action::Number(((ch as u8) - ('0' as u8)) as usize),
                 'W' | 'w' => Action::Up,
                 'S' | 's' => Action::Down,
                 'N' | 'n' => Action::Cancel,
                 _ => Action::Unimplemented
             }
         } else {
-            match ret {
+            match ch {
                 KEY_ENTER => Action::Confirm,
                 KEY_BACKSPACE => Action::Cancel,
                 KEY_UP => Action::Up,

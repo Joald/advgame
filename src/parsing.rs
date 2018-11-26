@@ -30,26 +30,27 @@ pub fn parse_game(filename: &str) -> Result<GameState, String> {
 
 pub const FORMAT: &str = "\
 struct Statistic {\
+    id: usize
     name: String,\
     default_value: i32\
 }\
 \
 struct StageOption {\
     target_stage: usize,\
-    text: Vec<String>\
+    text: String[]\
 }\
 \
 struct Stage {\
     index: usize,\
     name: String,\
-    text: Vec<String>,\
-    options: Vec<StageOption>\
+    text: String[],\
+    options: StageOption[]\
 }\
 \
 struct GameState {\
     name: String,\
-    stats: Vec<Statistic>,\
-    stages: Vec<Stage>,\
-    current_stage: usize,\
+    stats: Statistic[],\
+    stages: Stage[],\
+    entry_stage: usize,\
     exit_stage: usize\
 }";

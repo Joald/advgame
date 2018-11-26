@@ -2,8 +2,9 @@
   "name": "Test game",
   "stats": [
     {
+      "id": 0,
       "name": "Test stat",
-      "default_value": 1
+      "default_value": 0
     }
   ],
   "stages": [
@@ -16,18 +17,25 @@
       ],
       "options": [
         {
-          "target_stage": 2,
-          "text": [
-            "This option is supposed to move you to the other stage.",
-            "Also this option will have multiple lines of text."
-          ]
-        },
-        {
           "target_stage": 1,
           "text": [
             "This option moves you back to the same stage.",
             "This option will also have multiple lines!"
           ]
+        },
+        {
+          "target_stage": 2,
+          "text": [
+            "This option is supposed to move you to the other stage.",
+            "Also this option will have multiple lines of text.",
+            "Furthermore, it will only display if the value of the test stat is 1."
+          ],
+          "condition": {
+            "if_stat_exact": {
+              "stat_id": 1,
+              "value": 1
+            }
+          }
         },
         {
           "target_stage": 3,
@@ -69,7 +77,7 @@
       "index": 3,
       "name": "Stage 3",
       "text": [
-        "This the exit stage of the demo.",
+        "This is the exit stage of the demo.",
         "Thank you for testing!"
       ],
       "options": []
