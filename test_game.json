@@ -20,8 +20,15 @@
           "target_stage": 1,
           "text": [
             "This option moves you back to the same stage.",
-            "This option will also have multiple lines!"
-          ]
+            "This option will also have multiple lines!",
+            "It will also change the statistic to 1."
+          ],
+          "effect": {
+            "set_stat_exact": {
+              "stat_id": 0,
+              "new_value": 1
+            }
+          }
         },
         {
           "target_stage": 2,
@@ -32,7 +39,7 @@
           ],
           "condition": {
             "if_stat_exact": {
-              "stat_id": 1,
+              "stat_id": 0,
               "value": 1
             }
           }
