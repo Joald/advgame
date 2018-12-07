@@ -6,7 +6,6 @@ advgame aims to be a fully-fledged text based adventure game "engine". What does
 List of planned features:
  - File parser - *Basic working version*
  - `ncurses` - based interface for displaying game content - *Basic working version*
- - A way to edit .agf (Adventure Game Format) files that doesn't require encyclopaedic knowledge of the format (and the parser).
- - more ways to interact with the game: stats checks, items etc. - *Next on the list!*
+ - more ways to interact with the game: stat checks - *Done!*, items etc. - *Next on the list!*
 
 Interested, but don't know anything programming, or Rust? Message me, and I can prepare a working executable for your computer.
