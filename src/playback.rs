@@ -1,5 +1,5 @@
-use game_state::GameState;
-use console::*;
+use crate::game_state::GameState;
+use crate::console::*;
 
 pub fn main_loop(cls: &Console, mut state: GameState) {
     dprintln!("Starting main loop!");

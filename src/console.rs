@@ -1,6 +1,6 @@
 use ncurses::*;
-use game_state::Stage;
-use debug::DEBUG;
+use crate::game_state::Stage;
+use crate::debug::DEBUG;
 
 
 pub struct Console {
@@ -8,8 +8,8 @@ pub struct Console {
     col_count: i32,
 }
 use std::sync::Mutex;
-use misc;
-use game_state::GameState;
+use crate::misc;
+use crate::game_state::GameState;
 
 lazy_static! {
     pub static ref DEBUG_LOG: Mutex<String> = Mutex::new(String::new());

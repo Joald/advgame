@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use console::Action;
+use crate::console::Action;
 use std::fmt;
 use std::iter::Iterator;
 use std::cell::RefCell;

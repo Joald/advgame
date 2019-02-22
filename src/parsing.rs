@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{Read, Error as IOError};
-use game_state::GameState;
 use std::io::ErrorKind;
+use crate::game_state::GameState;
 
 pub fn open_json_file(filename: &str) -> Result<String, IOError> {
     const EXTENSION: &str = ".json";
