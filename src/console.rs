@@ -1,16 +1,17 @@
-use ncurses::*;
-use crate::game_state::Stage;
-use crate::debug::DEBUG;
+use std::fmt;
+use std::sync::Mutex;
 
+use ncurses::*;
+
+use crate::debug::DEBUG;
+use crate::game_components::Stage;
+use crate::game_state::GameState;
+use crate::misc;
 
 pub struct Console {
     row_count: i32,
     col_count: i32,
 }
-use std::sync::Mutex;
-use crate::misc;
-use crate::game_state::GameState;
-
 lazy_static! {
     pub static ref DEBUG_LOG: Mutex<String> = Mutex::new(String::new());
 }
@@ -53,6 +54,7 @@ impl Console {
 
     pub fn print_stage(&self, stage: &Stage, game: &GameState) {
         // Stage name is in bold.
+        dprintln!("Printing stage {:?}", stage);
         attr_on(A_BOLD());
         self.print_top_offset(&stage.name, 1);
         attr_off(A_BOLD());
@@ -71,10 +73,10 @@ impl Console {
         // the option number will have. Then, to center the text we pad the max line width
         // on both sides with the number length, two more characters for the dot and space
         // after the number and four for the selection arrow.
-        const ARROW_LEN: usize = 4;
+        const ARROW: &str = "--> ";
         const DOT_AND_SPACE: usize = 2;
         let max_number_width = game.visible_options(stage).count().to_string().len();
-        let cont_offset = max_number_width + DOT_AND_SPACE + ARROW_LEN;
+        let cont_offset = max_number_width + DOT_AND_SPACE + ARROW.len();
         let max_width = game.visible_options(stage)
             .map(|option| { misc::max_str_len(&option.text) })
             .max()
@@ -87,13 +89,12 @@ impl Console {
                 continue;
             }
             display_index += 1;
-            let arrow =
-                if internal_index == stage.current_option - 1 {
-                    "--> ".to_string()
-                } else {
-                    " ".repeat(ARROW_LEN)
-                };
-            let row = format!("{}{}. {}", arrow, display_index, option.text[0]);
+            let arrow = if internal_index == stage.current_option - 1 {
+                ARROW.to_string()
+            } else { " ".repeat(ARROW.len()) };
+            let row_text = if option.text.len() == 0 { "" } else { &option.text[0] };
+            let row = format!("{}{}. {}", arrow, display_index, row_text);
+            dprintln!("Printing option {}, first row text is {}", display_index, row);
             mvprintw(current_line_nr, self.left_align(max_width as i32), &row);
             for line in option.text[1..].iter() {
                 let line = " ".repeat(cont_offset) + line;
@@ -168,4 +169,22 @@ pub enum Action {
     Down,
     Number(usize),
     Debug,
+}
+impl fmt::Display for Action {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let Action::Number(num) = self {
+            write!(f, "Action::Number({})", num)
+        } else {
+            write!(f, "Action::{}", match self {
+                Action::Confirm => "Confirm",
+                Action::Quit => "Quit",
+                Action::Cancel => "Cancel",
+                Action::Unimplemented => "Unimplemented",
+                Action::Up => "Up",
+                Action::Down => "Down",
+                Action::Debug => "Debug",
+                _ => "This will never be printed."
+            })
+        }
+    }
 }

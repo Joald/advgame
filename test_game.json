@@ -3,7 +3,12 @@
   "stats": [
     {
       "id": 0,
-      "name": "Test stat",
+      "name": "Attack",
+      "default_value": 2
+    },
+    {
+      "id": 1,
+      "name": "HP",
       "default_value": 0
     }
   ],
@@ -21,7 +26,7 @@
           "text": [
             "This option moves you back to the same stage.",
             "This option will also have multiple lines!",
-            "It will also change the statistic to 1."
+            "It will also change your attack value to 1."
           ],
           "effect": {
             "set_stat_exact": {
@@ -88,6 +93,44 @@
         "Thank you for testing!"
       ],
       "options": []
+    }
+  ],
+  "item_slots": [
+    "head",
+    "body",
+    "legs",
+    "arms",
+    "weapon"
+  ],
+  "items": [
+    {
+      "id": 0,
+      "name": "Blade of Truth",
+      "effect": {
+        "equippable": {
+          "slot": "weapon",
+          "when_equipped": {
+            "set_stat_higher": {
+              "stat_id": 0,
+              "to_add": 2
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": 1,
+      "name": "Potion of HP restoration",
+      "effect": {
+        "consumable": {
+          "on_consume": {
+            "set_stat_higher": {
+              "stat_id": 1,
+              "to_add": 5
+            }
+          }
+        }
+      }
     }
   ],
   "entry_stage": 1,

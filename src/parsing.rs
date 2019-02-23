@@ -1,6 +1,7 @@
 use std::fs::File;
-use std::io::{Read, Error as IOError};
+use std::io::{Error as IOError, Read};
 use std::io::ErrorKind;
+
 use crate::game_state::GameState;
 
 pub fn open_json_file(filename: &str) -> Result<String, IOError> {
@@ -17,17 +18,18 @@ pub fn open_json_file(filename: &str) -> Result<String, IOError> {
 
 pub fn parse_game(filename: &str) -> Result<GameState, String> {
     let file = match open_json_file(filename) {
-        Ok(f) => f, Err(err) => return Err(err.to_string())
+        Ok(f) => f,
+        Err(err) => return Err(err.to_string())
     };
     match serde_json::from_str::<GameState>(&file) {
         Ok(st) => st.post_process(),
         Err(err) => Err(format!("Error while parsing the JSON file, line {}:{}\n{}\n",
-            err.line(), err.column(), err
+                                err.line(), err.column(), err
         ))
     }
 }
 
-
+// TODO: Make this readable and up-to-date
 pub const FORMAT: &str = "\
 struct Statistic {\
     id: usize
@@ -54,3 +56,5 @@ struct GameState {\
     entry_stage: usize,\
     exit_stage: usize\
 }";
+
+

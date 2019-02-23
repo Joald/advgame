@@ -1,18 +1,19 @@
-use crate::game_state::GameState;
 use crate::console::*;
+use crate::game_state::GameState;
 
 pub fn main_loop(cls: &Console, mut state: GameState) {
     dprintln!("Starting main loop!");
     let mut action = Action::Unimplemented;
     while match action { Action::Quit => false, _ => true } {
         cls.clear();
-        cls.print_stage(&state.get_current_stage().borrow(), &state);
+        cls.print_stage(state.get_current_stage(), &state);
         action = cls.get_action();
         state = state.handle_action(&action);
         if state.is_finished() {
             break;
         }
     }
+    dprintln!("Exiting main loop!");
     cls.clear();
     cls.print_center("Thank you for playing!");
     cls.print_center_offset("Press any key to exit the application.", 1);

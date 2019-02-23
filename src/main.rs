@@ -1,29 +1,28 @@
+//#[macro_use]
+extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
 extern crate ncurses;
 extern crate serde;
-extern crate serde_json;
 #[macro_use]
 extern crate serde_derive;
-//#[macro_use]
-extern crate itertools;
+extern crate serde_json;
+
+use parsing::FORMAT;
+use parsing::parse_game;
+use playback::play_game;
 
 #[macro_use]
 mod debug;
 mod misc;
 mod playback;
+mod game_components;
 mod game_state;
 mod parsing;
 mod console;
 
-use parsing::parse_game;
-use playback::play_game;
-
-use parsing::FORMAT;
-
-
-
 fn main() {
+    // TODO: replace this with a real arg parser
     let args: Vec<String> = std::env::args().collect();
     if args.len() != 2 {
         eprintln!("Usage: {} filename", args[0]);
