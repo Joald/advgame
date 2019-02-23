@@ -1,0 +1,58 @@
+- Struct means that all field must be included.
+- Enum means that you choose one of the options.
+- Even if something is written 'ExactlyLikeThis',
+  you still have to write it 'exactly_like_this'.
+- usize means that it must be a positive number.
+- i32 means that it must be a number between -2^31 and 2^31.
+- Vec<X> means you need to put X objects in a [X, X, X] list.
+
+type StatValue = i32;
+
+struct Statistic {
+    id: usize,
+    name: String,
+    default_value: StatValue,
+}
+
+type ItemSlot = String;
+
+enum ItemEffect {
+    NoEffect,
+    Consumable { on_consume: Effect },
+    Equippable { slot: ItemSlot, when_equipped: Effect },
+}
+
+struct Item {
+    id: usize,
+    name: String,
+    effect: ItemEffect,
+}
+
+enum Condition {
+    Always,
+    IfStatHigher { stat_id: usize, higher_than: StatValue },
+    IfStatLower { stat_id: usize, lower_than: StatValue },
+    IfStatExact { stat_id: usize, value: StatValue },
+}
+
+enum Effect {
+    NoEffect,
+    SetStatHigher { stat_id: usize, to_add: StatValue },
+    SetStatLower { stat_id: usize, to_subtract: StatValue },
+    SetStatExact { stat_id: usize, new_value: StatValue },
+}
+
+struct StageOption {
+    target_stage: usize,
+    text: Vec<String>,
+    condition: Condition,
+    effect: Effect,
+}
+
+struct Stage {
+    index: usize,
+    name: String,
+    text: Vec<String>,
+    options: Vec<StageOption>,
+}
+

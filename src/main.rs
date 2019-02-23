@@ -8,9 +8,10 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
-use parsing::FORMAT;
 use parsing::parse_game;
 use playback::play_game;
+
+use crate::parsing::print_format;
 
 #[macro_use]
 mod debug;
@@ -28,6 +29,8 @@ fn main() {
         eprintln!("Usage: {} filename", args[0]);
         std::process::exit(1);
     }
+    const FORMAT_ARG: &str = "--format";
+    const FORMAT_REGEN_ARG: &str = "-regen";
 
     if args[1] == "--help" {
         println!("\
@@ -35,13 +38,23 @@ fn main() {
         To play a game, run:\n\
         {name} game-file.agf\n\
         To display game file format, run:\n\
-        {name} --format\n\
-        Copyright © 2018 Jacek Olczyk", name = args[0]);
+        {name} {format}\n\
+        To also force the regeneration, run:\n\
+        {name} {format}{regen}\n\
+
+        Copyright © 2018 Jacek Olczyk",
+                 name = args[0],
+                 format = FORMAT_ARG,
+                 regen = FORMAT_REGEN_ARG);
         std::process::exit(0);
     }
 
-    if args[1] == "--format" {
-        println!("{}", FORMAT);
+    if args[1] == FORMAT_ARG {
+        print_format(false);
+        std::process::exit(0);
+    }
+    if args[1] == FORMAT_ARG.to_string() + FORMAT_REGEN_ARG {
+        print_format(true);
         std::process::exit(0);
     }
 

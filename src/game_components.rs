@@ -1,6 +1,6 @@
 use crate::game_state::GameState;
 
-type StatValue = i32;
+pub type StatValue = i32;
 
 pub trait Conditional { fn get_condition(&self) -> &Condition; }
 
@@ -68,6 +68,7 @@ pub struct Stage {
     pub current_option: usize,
 }
 
+/// FORMAT END
 
 pub enum Direction {
     Up,
