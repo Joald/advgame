@@ -27,8 +27,9 @@ pub struct Item {
     pub id: usize,
     pub name: String,
     pub effect: ItemEffect,
+    #[serde(skip)]
+    pub in_use: bool,
 }
-
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -46,6 +47,7 @@ pub enum Effect {
     SetStatHigher { stat_id: usize, to_add: StatValue },
     SetStatLower { stat_id: usize, to_subtract: StatValue },
     SetStatExact { stat_id: usize, new_value: StatValue },
+    UseItem { item_id: usize }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -170,7 +172,7 @@ impl Effect {
     pub fn change_stat_id(&self, new_id: usize) -> Option<Self> {
         let mut x = self.clone();
         match x {
-            Effect::NoEffect => None,
+            Effect::NoEffect | Effect::UseItem { item_id: _ } => None,
             Effect::SetStatLower { ref mut stat_id, to_subtract: _ } |
             Effect::SetStatHigher { ref mut stat_id, to_add: _ } |
             Effect::SetStatExact { ref mut stat_id, new_value: _ } => {
@@ -181,7 +183,7 @@ impl Effect {
     }
     pub fn map_state_id<F: FnOnce(usize) -> Result<usize, String>>(&self, mapping: F) -> Result<Self, String> {
         match self {
-            Effect::NoEffect => Ok(self.clone()),
+            Effect::NoEffect | Effect::UseItem { item_id: _ } => Ok(self.clone()),
             Effect::SetStatLower { stat_id, to_subtract: _ } |
             Effect::SetStatHigher { stat_id, to_add: _ } |
             Effect::SetStatExact { stat_id, new_value: _ } => {

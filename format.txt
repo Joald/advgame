@@ -40,6 +40,7 @@ enum Effect {
     SetStatHigher { stat_id: usize, to_add: StatValue },
     SetStatLower { stat_id: usize, to_subtract: StatValue },
     SetStatExact { stat_id: usize, new_value: StatValue },
+    UseItem { item_id: usize }
 }
 
 struct StageOption {

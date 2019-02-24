@@ -40,7 +40,7 @@
           "text": [
             "This option is supposed to move you to the other stage.",
             "Also this option will have multiple lines of text.",
-            "Furthermore, it will only display if the value of the test stat is 1."
+            "Furthermore, it will only display if your attack value is 1."
           ],
           "condition": {
             "if_stat_exact": {

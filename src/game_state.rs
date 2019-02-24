@@ -96,59 +96,73 @@ impl GameState {
             })
         );
 
-        for stage in self.stages.iter_mut() {
+        self.stages.iter_mut().fold(Ok(0), |res, stage| {
             let stage_index = stage.index;
             let stage_name = stage.name.clone();
 
             let mapping = |x: usize| {
-                match mapper.get(&x) {
-                    Some(&ind) => Ok(ind),
-                    None => Err(format!(
-                        "Entry \"{}\" in stage {}, \"{}\" points to an inexistent stage.",
-                        x, stage_index, stage_name
-                    ))
-                }
+                mapper.get(&x).ok_or(format!(
+                    "Entry \"{}\" in stage {}, \"{}\" points to an inexistent stage.",
+                    x, stage_index, stage_name
+                )).and_then(|x| Ok(*x))
             };
 
-            for option in stage.options.iter_mut() {
+            stage.options.iter_mut().fold(res, |res, option| {
                 if option.text.is_empty() {
                     return Err(format!("No text provided for option in stage {}", stage_index));
                 }
-
                 option.target_stage = mapping(option.target_stage)?;
-            }
-
-            stage.index = *mapper.get(&stage_index).expect(
-                "Post processing of data failed. It's a bug on our side. Sorry!"
-            ); // panic because this should never happen regardless of input data
-        }
-        self.current_stage = *match mapper.get(&self.current_stage) {
-            Some(st) => st,
-            None => return Err("Entry stage is invalid!".to_string())
-        };
-        self.exit_stage = *match mapper.get(&self.exit_stage) {
-            Some(st) => st,
-            None => return Err("Exit stage is invalid!".to_string())
-        };
-        Ok(self)
+                res
+            }).and(mapper.get(&stage_index).ok_or(
+                "Post processing of data failed. It's a bug on our side. Sorry!".to_string()
+            )).and_then(|mapped_index| {
+                stage.index = *mapped_index;
+                Ok(1)
+            })
+        }).and(
+            mapper.get(&self.current_stage).ok_or("Entry stage is invalid!".to_string())
+        ).and_then(|first_stage| {
+            self.current_stage = *first_stage;
+            mapper.get(&self.exit_stage).ok_or("Exit stage is invalid!".to_string())
+        }).and_then(|stage| {
+            self.exit_stage = *stage;
+            Ok(self)
+        })
     }
 
     pub fn map_item_ids(mut self) -> ParseResult {
         dprintln!("map_item_ids():    {:?}", self);
-        let item_mapper: HashMap<usize, usize> = HashMap::from_iter(
+        let item_id_mapper: HashMap<usize, usize> = HashMap::from_iter(
             self.items.iter().enumerate().map(|(i, item)| {
                 dprintln!("Item {} becomes item {}!", item.id, i);
                 (item.id, i)
             })
         );
-        let mut res: Result<usize, String> = Ok(1);
-        self.items.iter_mut().for_each(|item| {
-            item.id = *item_mapper.get(&item.id).unwrap_or_else(|| {
-                res = Err(format!("Invalid stage {}", item.id));
-                &item.id
-            });
-        });
-        res.and(Ok(self))
+        let effect_mapper = |effect: &mut Effect| match effect {
+            Effect::NoEffect | Effect::SetStatHigher { .. } |
+            Effect::SetStatLower { .. } | Effect::SetStatExact { .. } => Ok(1),
+            Effect::UseItem { ref mut item_id } =>
+                item_id_mapper.get(item_id)
+                    .ok_or(format!("Invalid item {} in a use_item effect.", item_id))
+                    .and_then(|mapped_item_id| {
+                        *item_id = *mapped_item_id;
+                        Ok(1)
+                    }),
+        };
+        self.items.iter_mut().fold(Ok(1), |res, item|
+            res.and(item_id_mapper.get(&item.id)
+                .ok_or(format!("Invalid item {}", item.id)))
+                .and_then(|item_id| {
+                    item.id = *item_id;
+                    match item.effect {
+                        ItemEffect::NoEffect => Ok(1),
+                        ItemEffect::Consumable { ref mut on_consume } =>
+                            effect_mapper(on_consume),
+                        ItemEffect::Equippable { slot: _, ref mut when_equipped } =>
+                            effect_mapper(when_equipped),
+                    }
+                }),
+        ).and(Ok(self))
     }
 
     pub fn post_process(mut self) -> ParseResult {
@@ -285,7 +299,7 @@ impl GameState {
 
     fn apply_effect(&mut self, effect: Effect) {
         match effect {
-            Effect::NoEffect => {}
+            Effect::NoEffect | Effect::UseItem { item_id: _ } => {}
             Effect::SetStatExact { stat_id, new_value } =>
                 self.stats[stat_id].value = new_value,
             Effect::SetStatHigher { stat_id, to_add } =>

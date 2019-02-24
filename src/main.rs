@@ -39,10 +39,10 @@ fn main() {
         {name} game-file.agf\n\
         To display game file format, run:\n\
         {name} {format}\n\
-        To also force the regeneration, run:\n\
+        To force the format regeneration, run:\n\
         {name} {format}{regen}\n\
 
-        Copyright © 2018 Jacek Olczyk",
+        Copyright © 2018-2019 Jacek Olczyk",
                  name = args[0],
                  format = FORMAT_ARG,
                  regen = FORMAT_REGEN_ARG);
