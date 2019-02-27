@@ -170,6 +170,15 @@
           }
         }
       }
+    },
+    {
+      "id": 2,
+      "name": "Item that does nothing.",
+      "effect": {
+        "equippable": {
+          "slot": "body"
+        }
+      }
     }
   ],
   "entry_stage": 1,

@@ -19,7 +19,13 @@ pub type ItemSlot = String;
 pub enum ItemEffect {
     NoEffect,
     Consumable { on_consume: Effect },
-    Equippable { slot: ItemSlot, when_equipped: Effect, when_unequipped: Effect },
+    Equippable {
+        slot: ItemSlot,
+        #[serde(default = "Effect::no_effect")]
+        when_equipped: Effect,
+        #[serde(default = "Effect::no_effect")]
+        when_unequipped: Effect,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
