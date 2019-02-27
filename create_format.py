@@ -1,6 +1,16 @@
 import os
+import re
+from typing import Union, IO
 
 SRC_DIR = "src"
+
+first_cap_re = re.compile('(.)([A-Z][a-z]+)')
+all_cap_re = re.compile('([a-z0-9])([A-Z])')
+
+
+def camel_case_to_snake(name: str) -> str:
+    s1 = first_cap_re.sub(r'\1_\2', name)
+    return all_cap_re.sub(r'\1_\2', s1).lower()
 
 
 class FormatCreator:
@@ -13,13 +23,35 @@ class FormatCreator:
                       "  you still have to write it 'exactly_like_this'.\n" + \
                       "- usize means that it must be a positive number.\n" + \
                       "- i32 means that it must be a number between -2^31 and 2^31.\n" + \
-                      "- Vec<X> means you need to put X objects in a [X, X, X] list.\n"
+                      "- Vec<X> means you need to put X objects in a [X, X, X] list.\n" + \
+                      "- '=' sign after field means it is optional.\n"
         self.format += "\n"
+
+        self.rename = "#[serde(rename = "
+        self.to_rename = None
+        self.defaulter = "#[serde(default ="
+        self.to_default = None
+        self.skipper = "#[serde(skip)]"
+        self.to_skip = None
+        self.FORCE_SKIP = "THIS TEXT FORCES SKIPPING"
 
     def add_line(self, line=""):
         self.format += line + "\n"
 
-    def create(self, file=None):
+    def check_serde(self, line="") -> bool:
+        serde = False
+        if line.startswith(self.skipper):
+            self.to_skip = True
+            serde = True
+        if line.startswith(self.rename):
+            self.to_rename = line.split('"')[1]
+            serde = True
+        if line.startswith(self.defaulter):
+            self.to_default = line.split('"')[1]
+            serde = True
+        return serde
+
+    def create(self, file=None) -> str:
         if file is not None:
             self.f = file
         for line in self.f:
@@ -37,41 +69,66 @@ class FormatCreator:
                 self.add_line(line + "\n")
         return self.format
 
+    def apply_serde(self, line: str) -> Union[str, None]:
+        if self.to_rename is not None:
+            line = self.to_rename + ":" + line.split(":")[1]
+            self.to_rename = None
+        if self.to_default is not None:
+            assert line[-1] == ','
+            line = line[:-1]
+            line += " = " + self.to_default + ','
+            self.to_default = None
+        if self.to_skip is not None:
+            self.to_skip = None
+            return None
+        return line
+
     def parse_enum(self):
+        brace_count = 1
         for line in self.f:
             line = line.strip()
             if line.startswith("}"):
-                self.add_line("}\n")
-                return
+                brace_count -= 1
+                if brace_count == 0:
+                    self.add_line("}\n")
+                    return
+            if self.check_serde(line):
+                continue
+            line = self.apply_serde(line)
             if line:
-                self.add_line("    " + line)
+                split = line.split(' ')
+                name = camel_case_to_snake(split[0])
+                line = ' '.join([name] + split[1:])
+                self.add_line("    " * brace_count + line)
+                if line.endswith("{"):
+                    brace_count += 1
 
     def parse_struct(self):
-        rename = "#[serde(rename = "
-        to_rename = None
+        brace_count = 1
         for line in self.f:
             line = line.strip()
             if line.startswith("}"):
-                self.add_line("}\n")
-                return
-            if line.startswith("#[serde(skip)]"):
-                next(self.f)
+                brace_count -= 1
+                if brace_count == 0:
+                    self.add_line("}\n")
+                    return
+            if self.check_serde(line):
                 continue
-            if line.startswith(rename):
-                to_rename = line.split('"')[1]
-            if line.startswith("pub "):
+            if line:
                 line = line[4:]
-                if to_rename is not None:
-                    line = to_rename + ":" + line.split(":")[1]
-                    to_rename = None
-                self.add_line("    " + line)
+                line = self.apply_serde(line)
+                if line is not None:
+                    self.add_line("    " * brace_count + line)
+
+            if line and line.endswith("{"):
+                brace_count += 1
 
 
-def game_components_file():
+def game_components_file() -> IO:
     return open(os.path.join(SRC_DIR, "game_components.rs"), "r")
 
 
-def format_file():
+def format_file() -> IO:
     return open("format.txt", "w")
 
 

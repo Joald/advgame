@@ -5,6 +5,7 @@
 - usize means that it must be a positive number.
 - i32 means that it must be a number between -2^31 and 2^31.
 - Vec<X> means you need to put X objects in a [X, X, X] list.
+- '=' sign after field means it is optional.
 
 type StatValue = i32;
 
@@ -17,9 +18,13 @@ struct Statistic {
 type ItemSlot = String;
 
 enum ItemEffect {
-    NoEffect,
-    Consumable { on_consume: Effect },
-    Equippable { slot: ItemSlot, when_equipped: Effect },
+    no_effect,
+    consumable { on_consume: Effect },
+    equippable {
+        slot: ItemSlot,
+        when_equipped: Effect = Effect::no_effect,
+        when_unequipped: Effect = Effect::no_effect,
+    },
 }
 
 struct Item {
@@ -29,25 +34,25 @@ struct Item {
 }
 
 enum Condition {
-    Always,
-    IfStatHigher { stat_id: usize, higher_than: StatValue },
-    IfStatLower { stat_id: usize, lower_than: StatValue },
-    IfStatExact { stat_id: usize, value: StatValue },
+    always,
+    if_stat_higher { stat_id: usize, higher_than: StatValue },
+    if_stat_lower { stat_id: usize, lower_than: StatValue },
+    if_stat_exact { stat_id: usize, value: StatValue },
 }
 
 enum Effect {
-    NoEffect,
-    SetStatHigher { stat_id: usize, to_add: StatValue },
-    SetStatLower { stat_id: usize, to_subtract: StatValue },
-    SetStatExact { stat_id: usize, new_value: StatValue },
-    UseItem { item_id: usize }
+    no_effect,
+    set_stat_higher { stat_id: usize, to_add: StatValue },
+    set_stat_lower { stat_id: usize, to_subtract: StatValue },
+    set_stat_exact { stat_id: usize, new_value: StatValue },
+    use_item { item_id: usize },
 }
 
 struct StageOption {
     target_stage: usize,
     text: Vec<String>,
-    condition: Condition,
-    effect: Effect,
+    condition: Condition = Condition::always,
+    effect: Effect = Effect::no_effect,
 }
 
 struct Stage {
