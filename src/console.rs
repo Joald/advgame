@@ -62,6 +62,7 @@ impl Console {
         let mut current_line_nr = 4;
         let max_width = misc::max_str_len(&stage.text);
         for line in stage.text.iter() {
+            let line = game.parse_format_text(line);
             mvprintw(current_line_nr, self.left_align(max_width as i32), &line);
             current_line_nr += 1;
         }

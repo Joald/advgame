@@ -67,14 +67,14 @@ class FormatCreator:
                 self.add_line("    " + line)
 
 
-def game_components():
+def game_components_file():
     return open(os.path.join(SRC_DIR, "game_components.rs"), "r")
 
 
-def format():
+def format_file():
     return open("format.txt", "w")
 
 
 if __name__ == "__main__":
-    with game_components() as f, format() as out:
+    with game_components_file() as f, format_file() as out:
         out.write(FormatCreator(f).create())

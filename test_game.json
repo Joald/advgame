@@ -18,7 +18,8 @@
       "name": "Stage 1",
       "text": [
         "This is a generic Stage 1 text.",
-        "This the second line of the generic Stage 1 text."
+        "This the second line of the generic Stage 1 text.",
+        "Your attack is ${stat.Attack}."
       ],
       "options": [
         {
@@ -68,7 +69,8 @@
       "name": "Stage 2 - the continuation",
       "text": [
         "This is a generic Stage 2 text.",
-        "The purpose of Stage 2 is to test going back and forth between stages."
+        "The purpose of Stage 2 is to test going back and forth between stages.",
+        "This line contains an invalid format and two closing braces: ${}}}"
       ],
       "options": [
         {
