@@ -122,7 +122,7 @@
         {
           "target_stage": 1,
           "text": [
-            "Exit the cave."
+            "Exit the cave while demonstrating your attack power of ${stat.Attack}."
           ]
         }
       ]

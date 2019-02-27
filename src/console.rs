@@ -94,7 +94,8 @@ impl Console {
                 ARROW.to_string()
             } else { " ".repeat(ARROW.len()) };
             let row_text = if option.text.len() == 0 { "" } else { &option.text[0] };
-            let row = format!("{}{}. {}", arrow, display_index, row_text);
+            let row = game.parse_format_text(&format!("{}{}. {}", arrow, display_index, row_text));
+
             dprintln!("Printing option {}, first row text is {}", display_index, row);
             mvprintw(current_line_nr, self.left_align(max_width as i32), &row);
             for line in option.text[1..].iter() {
