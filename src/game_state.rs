@@ -331,20 +331,16 @@ impl GameState {
     fn parse_format_tiny(&self, text: &str) -> String {
         let split_text: Vec<&str> = text.split('.').collect();
         match split_text[0] {
-            "stat" => {
-                let stat = split_text[1].parse::<usize>().and_then(|x| {
-                    Ok(Ok(&self.stats[x]))
-                }).unwrap_or(
-                    self.stats.iter().find(|stat| stat.name == split_text[1]).ok_or("")
-                );
-                if stat.is_err() {
-                    return text.to_string();
-                }
-                format!("{}", stat.unwrap().value)
-            }
-            "item" => split_text[1].to_string(),
-            rest => rest.to_string(),
-        }
+            "stat" => split_text[1].parse::<usize>()
+                .and_then(|x| { Ok(&self.stats[x]) })
+                .or(self.stats.iter().find(|stat| stat.name == split_text[1]).ok_or(""))
+                .and_then(|stat| Ok(format!("{}", stat.value))),
+            "item" => split_text[1].parse::<usize>()
+                .and_then(|x| { Ok(&self.items[x]) })
+                .or(self.items.iter().find(|item| item.name == split_text[1]).ok_or(""))
+                .and_then(|x| Ok(x.name.clone())),
+            _ => Err("")
+        }.unwrap_or(text.to_string())
     }
 
     pub fn parse_format_text(&self, text: &str) -> String {

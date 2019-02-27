@@ -112,7 +112,7 @@
       "index": 4,
       "name": "The Cave of Wonders",
       "text": [
-        "In the Cave of Wonders you find the Blade of Truth.",
+        "In the Cave of Wonders you find the ${item.0}.",
         "You place your hand on its hilt and lift the sword,",
         "which in turn lights up and illuminates the whole cavern.",
         "In its glow you are able to see that there is nothing else there.",
