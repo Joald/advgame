@@ -61,6 +61,18 @@
           "text": [
             "This is another option that loops back to here."
           ]
+        },
+        {
+          "target_stage": 4,
+          "text": [
+            "This option will move you to the Cave of Wonders.",
+            "In the cave you will find a sword and equip it automatically."
+          ],
+          "effect": {
+            "use_item": {
+              "item_id": 0
+            }
+          }
         }
       ]
     },
@@ -95,6 +107,25 @@
         "Thank you for testing!"
       ],
       "options": []
+    },
+    {
+      "index": 4,
+      "name": "The Cave of Wonders",
+      "text": [
+        "In the Cave of Wonders you find the Blade of Truth.",
+        "You place your hand on its hilt and lift the sword,",
+        "which in turn lights up and illuminates the whole cavern.",
+        "In its glow you are able to see that there is nothing else there.",
+        "You also feel your Attack become ${stat.Attack}."
+      ],
+      "options": [
+        {
+          "target_stage": 1,
+          "text": [
+            "Exit the cave."
+          ]
+        }
+      ]
     }
   ],
   "item_slots": [
@@ -114,7 +145,13 @@
           "when_equipped": {
             "set_stat_higher": {
               "stat_id": 0,
-              "to_add": 2
+              "to_add": 2137
+            }
+          },
+          "when_unequipped": {
+            "set_stat_lower": {
+              "stat_id": 0,
+              "to_subtract": 2137
             }
           }
         }

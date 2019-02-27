@@ -18,6 +18,8 @@ pub struct GameState {
     pub exit_stage: usize,
     #[serde(skip)]
     finished: bool,
+    #[serde(skip)]
+    item_slot_filling: HashMap<String, usize>,
 }
 
 impl fmt::Display for GameState {
@@ -74,14 +76,14 @@ impl GameState {
                     Condition::IfStatLower { ref mut stat_id, lower_than: _ } =>
                         *stat_id = mapping(*stat_id)?,
                 };
-                option.effect = option.effect.map_state_id(mapping)?;
+                option.effect = option.effect.map_state_id(&mapping)?;
                 res
             }));
             dprintln!("After:     {:?}", stage);
             rv
         }).and(self.items.iter_mut().fold(Ok(0), |res, item| {
             item.effect = item.effect.map_state_id(
-                |x| mapper.get(&x).and_then(|x| Some(*x)).ok_or(format!("Invalid state id in item {}.", item.name))
+                &|x| mapper.get(&x).and_then(|x| Some(*x)).ok_or(format!("Invalid state id in item {}.", item.name))
             )?;
             res
         })).and(Ok(self))
@@ -158,8 +160,8 @@ impl GameState {
                         ItemEffect::NoEffect => Ok(1),
                         ItemEffect::Consumable { ref mut on_consume } =>
                             effect_mapper(on_consume),
-                        ItemEffect::Equippable { slot: _, ref mut when_equipped } =>
-                            effect_mapper(when_equipped),
+                        ItemEffect::Equippable { slot: _, ref mut when_equipped, ref mut when_unequipped } =>
+                            effect_mapper(when_equipped).and(effect_mapper(when_unequipped)),
                     }
                 }),
         ).and(Ok(self))
@@ -259,7 +261,7 @@ impl GameState {
         };
         if stage_change.is_some() {
             let op = stage_change.unwrap();
-            self.apply_effect(op.effect.clone());
+            self.apply_effect(&op.effect);
             self.change_to_stage_index(op.target_stage);
         }
         self.finished = finish;
@@ -297,15 +299,32 @@ impl GameState {
         self.is_filled(x)
     }
 
-    fn apply_effect(&mut self, effect: Effect) {
-        match effect {
-            Effect::NoEffect | Effect::UseItem { .. } => {}
+    fn apply_effect(&mut self, effect: &Effect) {
+        match *effect {
+            Effect::NoEffect => {}
             Effect::SetStatExact { stat_id, new_value } =>
                 self.stats[stat_id].value = new_value,
             Effect::SetStatHigher { stat_id, to_add } =>
                 self.stats[stat_id].value += to_add,
             Effect::SetStatLower { stat_id, to_subtract } =>
-                self.stats[stat_id].value -= to_subtract
+                self.stats[stat_id].value -= to_subtract,
+            Effect::UseItem { item_id } => {
+                let item = &self.items[item_id];
+                //let eff: Vec<Effect> =
+                match &item.effect {
+                    ItemEffect::NoEffect => { [].to_vec() }
+                    ItemEffect::Consumable { on_consume } => {
+                        [on_consume.clone()].to_vec()
+                    }
+                    ItemEffect::Equippable { slot, when_equipped, when_unequipped: _ } => {
+                        let prev = self.item_slot_filling.insert(slot.clone(), item.id).and_then(|i| match self.items[i].effect {
+                            ItemEffect::Equippable { when_unequipped, .. } => Some(when_unequipped),
+                            _ => None
+                        }).unwrap_or(Effect::NoEffect);
+                        [*when_equipped, prev.clone()].to_vec()
+                    }
+                }.iter().for_each(|eff| self.apply_effect(eff));
+            }
         }
     }
 

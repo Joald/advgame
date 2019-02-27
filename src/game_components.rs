@@ -19,7 +19,7 @@ pub type ItemSlot = String;
 pub enum ItemEffect {
     NoEffect,
     Consumable { on_consume: Effect },
-    Equippable { slot: ItemSlot, when_equipped: Effect },
+    Equippable { slot: ItemSlot, when_equipped: Effect, when_unequipped: Effect },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -47,7 +47,7 @@ pub enum Effect {
     SetStatHigher { stat_id: usize, to_add: StatValue },
     SetStatLower { stat_id: usize, to_subtract: StatValue },
     SetStatExact { stat_id: usize, new_value: StatValue },
-    UseItem { item_id: usize }
+    UseItem { item_id: usize },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -181,7 +181,7 @@ impl Effect {
             }
         }
     }
-    pub fn map_state_id<F: FnOnce(usize) -> Result<usize, String>>(&self, mapping: F) -> Result<Self, String> {
+    pub fn map_state_id(&self, mapping: &Fn(usize) -> Result<usize, String>) -> Result<Self, String> {
         match self {
             Effect::NoEffect | Effect::UseItem { item_id: _ } => Ok(self.clone()),
             Effect::SetStatLower { stat_id, to_subtract: _ } |
@@ -195,7 +195,7 @@ impl Effect {
 }
 
 impl ItemEffect {
-    pub fn map_state_id<F: FnOnce(usize) -> Result<usize, String>>(&self, mapping: F) -> Result<Self, String> {
+    pub fn map_state_id(&self, mapping: &Fn(usize) -> Result<usize, String>) -> Result<Self, String> {
         let mut copy = self.clone();
         match copy {
             ItemEffect::NoEffect => Ok(copy),
@@ -203,8 +203,9 @@ impl ItemEffect {
                 *on_consume = on_consume.map_state_id(mapping)?;
                 Ok(copy)
             }
-            ItemEffect::Equippable { slot: _, ref mut when_equipped } => {
+            ItemEffect::Equippable { slot: _, ref mut when_equipped, ref mut when_unequipped } => {
                 *when_equipped = when_equipped.map_state_id(mapping)?;
+                *when_unequipped = when_unequipped.map_state_id(mapping)?;
                 Ok(copy)
             }
         }
@@ -223,8 +224,8 @@ impl Clone for Condition {
 impl Clone for ItemEffect {
     fn clone(&self) -> Self {
         match self {
-            ItemEffect::Equippable { slot, when_equipped } =>
-                ItemEffect::Equippable { slot: slot.clone(), when_equipped: *when_equipped },
+            ItemEffect::Equippable { slot, when_equipped, when_unequipped } =>
+                ItemEffect::Equippable { slot: slot.clone(), when_equipped: *when_equipped, when_unequipped: *when_unequipped },
             ItemEffect::Consumable { on_consume } =>
                 ItemEffect::Consumable { on_consume: *on_consume },
             ItemEffect::NoEffect => ItemEffect::NoEffect
